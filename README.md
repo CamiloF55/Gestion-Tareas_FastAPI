@@ -30,5 +30,5 @@ python -m venv venv
 # Activar entorno (Windows)
 .\venv\Scripts\Activate.ps1
 
-# Instalar dependencias
+# Instalar dependencias hola
 pip install -r requirements.txt
