@@ -1,0 +1,25 @@
+@startuml 
+title Flujo de Petición en el Sistema
+
+start
+
+:Petición HTTP al Balanceador;
+-> Distribuye;
+if (Es usuario autenticado?) then (Si)
+  :Servicio Web (API Gateway);
+  :Servicio A (Microservicio);
+else (No)
+  :Servicio de Autenticación;
+  if (Credenciales válidas?) then (Si)
+    :Generar Token JWT;
+    :Servicio Web (API Gateway);
+  else (No)
+    stop
+  endif
+endif
+
+:Base de Datos (Consulta);
+:Retornar Respuesta;
+
+stop
+@enduml

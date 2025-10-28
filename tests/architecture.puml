@@ -1,0 +1,59 @@
+@startuml2
+title Arquitectura MVC - API de Gestión de Tareas
+
+actor Usuario
+
+package "FastAPI Backend" {
+  
+  package "Controllers" {
+    component "auth_controller.py" as AuthController
+    component "task_controller.py" as TaskController
+  }
+
+  package "Services" {
+    component "auth_service.py" as AuthService
+    component "task_service.py" as TaskService
+  }
+
+  package "Models" {
+    component "auth.py" as AuthModel
+    component "task.py" as TaskModel
+  }
+
+  package "Middleware" {
+    component "auth.py" as MiddlewareAuth
+  }
+
+  package "Tests" {
+    component "test_auth.py" as TestAuth
+    component "test_tasks.py" as TestTasks
+  }
+
+  package "Docs" {
+    component "api_guide.md" as DocsGuide
+    component "architecture.md" as DocsArch
+  }
+
+  package ".github/workflows" {
+    component "ci.yml" as CICD
+  }
+}
+
+database "Base de Datos" as DB
+
+' --- Relaciones ---
+Usuario --> AuthController : Login / Signup
+Usuario --> TaskController : CRUD Tareas
+
+AuthController --> AuthService
+TaskController --> TaskService
+
+AuthService --> AuthModel
+TaskService --> TaskModel
+
+AuthController --> MiddlewareAuth : Validación JWT
+
+AuthModel --> DB
+TaskModel --> DB
+
+@enduml

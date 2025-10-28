@@ -1,0 +1,17 @@
+@startuml3
+title Flujo de Datos - Arquitectura FastAPI (MVC)
+
+actor Cliente
+
+Cliente -> FastAPI : HTTP Request
+FastAPI -> Middleware : Pasa la petición
+Middleware -> Middleware : Verificación JWT
+Middleware -> Controller : Request validado
+Controller -> Service : Lógica de negocio
+Service -> Model : Validación Pydantic
+Model --> Service : Datos validados
+Service --> Controller : Resultado de la operación
+Controller --> FastAPI : Response JSON
+FastAPI --> Cliente : Enviar respuesta
+
+@enduml
