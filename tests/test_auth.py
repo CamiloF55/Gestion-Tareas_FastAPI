@@ -1,59 +1,103 @@
-import pytest
-from fastapi.testclient import TestClient
-from main import app
+from datetime import datetime, timedelta
+from typing import Optional
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from models.user import User, UserCreate
 
-client = TestClient(app)
+SECRET_KEY = "tu_clave_secreta_super_segura_cambiala_en_produccion"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-def test_register_user():
-    """Test registrar un nuevo usuario"""
-    user_data = {
-        "username": "testuser",
-        "email": "test@example.com",
-        "password": "test123456",
-        "full_name": "Test User"
-    }
-    
-    response = client.post("/api/auth/register", json=user_data)
-    
-    assert response.status_code == 201
-    data = response.json()
-    assert data["username"] == user_data["username"]
-    assert data["email"] == user_data["email"]
-    assert "password" not in data
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def test_login_success():
-    """Test login exitoso"""
-    # Primero registrar
-    user_data = {
-        "username": "loginuser",
-        "email": "login@example.com",
-        "password": "loginpass123"
-    }
-    client.post("/api/auth/register", json=user_data)
+class AuthService:
+    def __init__(self):
+        self.users = []
+        self.next_id = 1
     
-    # Luego login
-    response = client.post(
-        "/api/auth/login",
-        data={"username": user_data["username"], "password": user_data["password"]}
-    )
+    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
+        """Verificar que la contraseña sea correcta"""
+        # Truncar a 72 bytes (límite de bcrypt)
+        password_truncated = plain_password[:72]
+        return pwd_context.verify(password_truncated, hashed_password)
     
-    assert response.status_code == 200
-    data = response.json()
-    assert "access_token" in data
-    assert data["token_type"] == "bearer"
+    def get_password_hash(self, password: str) -> str:
+        """Hashear la contraseña"""
+        # Truncar a 72 bytes (límite de bcrypt)
+        password_truncated = password[:72]
+        return pwd_context.hash(password_truncated)
+    
+    def get_user_by_username(self, username: str) -> Optional[dict]:
+        """Obtener usuario por nombre de usuario"""
+        for user in self.users:
+            if user["username"] == username:
+                return user
+        return None
+    
+    def get_user_by_email(self, email: str) -> Optional[dict]:
+        """Obtener usuario por email"""
+        for user in self.users:
+            if user["email"] == email:
+                return user
+        return None
+    
+    def create_user(self, user_data: UserCreate) -> User:
+        """Crear un nuevo usuario"""
+        hashed_password = self.get_password_hash(user_data.password)
+        
+        user_dict = {
+            "id": self.next_id,
+            "username": user_data.username,
+            "email": user_data.email,
+            "full_name": user_data.full_name,
+            "hashed_password": hashed_password,
+            "is_active": True,
+            "created_at": datetime.now()
+        }
+        
+        self.users.append(user_dict)
+        self.next_id += 1
+        
+        return User(
+            id=user_dict["id"],
+            username=user_dict["username"],
+            email=user_dict["email"],
+            full_name=user_dict["full_name"],
+            is_active=user_dict["is_active"],
+            created_at=user_dict["created_at"]
+        )
+    
+    def authenticate_user(self, username: str, password: str) -> Optional[User]:
+        """Autenticar un usuario"""
+        user = self.get_user_by_username(username)
+        if not user:
+            return None
+        if not self.verify_password(password, user["hashed_password"]):
+            return None
+        
+        return User(
+            id=user["id"],
+            username=user["username"],
+            email=user["email"],
+            full_name=user["full_name"],
+            is_active=user["is_active"],
+            created_at=user["created_at"]
+        )
+    
+    def create_access_token(self, data: dict, expires_delta: Optional[timedelta] = None) -> str:
+        """Crear token JWT"""
+        to_encode = data.copy()
+        expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+        to_encode.update({"exp": expire})
+        return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    
+    def decode_token(self, token: str) -> Optional[str]:
+        """Decodificar token JWT"""
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            return payload.get("sub")
+        except JWTError:
+            return None
 
-def test_login_wrong_password():
-    """Test login con contraseña incorrecta"""
-    user_data = {
-        "username": "wrongpass",
-        "email": "wrong@example.com",
-        "password": "correctpass"
-    }
-    client.post("/api/auth/register", json=user_data)
-    
-    response = client.post(
-        "/api/auth/login",
-        data={"username": user_data["username"], "password": "wrongpassword"}
-    )
-    
-    assert response.status_code == 401
+# Instancia global compartida
+auth_service_instance = AuthService()

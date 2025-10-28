@@ -10,10 +10,9 @@ client = TestClient(app)
 
 # Variables globales para los tests
 test_user = {
-    "username": "testuser",
-    "email": "test@example.com",
-    "password": "testpass123",
-    "full_name": "Test User"
+    "username": "taskuser",
+    "email": "task@example.com",
+    "password": "taskpass123" 
 }
 
 access_token = None
