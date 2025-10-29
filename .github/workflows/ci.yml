@@ -48,4 +48,4 @@ jobs:
           echo "✅ Pruebas pasadas."
           echo "Iniciando despliegue a un servidor..."
           echo "..."
-          echo "🎉 ¡Despliegue simulado con éxito!"
+          echo "🎉 ¡Despliegue simulado con éxito!" 
