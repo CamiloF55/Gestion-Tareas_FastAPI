@@ -1,86 +1,51 @@
-name: CI/CD Pipeline
+# .github/workflows/ci.yml
+name: Pipeline de CI/CD para Ingeniería Web
 
+# Se activa cada vez que haces 'push' a la rama 'main'
 on:
   push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
 
+# Lista de trabajos a ejecutar
 jobs:
-  test:
-    name: Tests y Calidad de Código
+  # 1er Job: Probar la aplicación
+  build-and-test:
+    name: 🧪 Construir y Probar
+    # Servidor virtual donde se ejecutará
     runs-on: ubuntu-latest
-    
-    strategy:
-      matrix:
-        python-version: ["3.9", "3.10", "3.11"]  # Entre comillas dobles
-    
+
     steps:
-    - name: Checkout código
-      uses: actions/checkout@v3
-    
-    - name: Configurar Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    
-    - name: Instalar dependencias
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install flake8 black pylint
-    
-    - name: Análisis de código con flake8
-      run: |
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=venv
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=venv
-      continue-on-error: true
-    
-    - name: Ejecutar tests
-      run: |
-        pytest --cov=. --cov-report=xml --cov-report=term
-  
-  build:
-    name: Build y Verificación
+      # 1. Descarga tu código del repo al servidor virtual
+      - name: Clonar Repositorio
+        uses: actions/checkout@v3
+
+      # 2. Configura Node.js en el servidor virtual
+      - name: Configurar Node.js v18
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # 3. Instalar las dependencias (npm install)
+      - name: Instalar Dependencias
+        run: npm install
+
+      # 4. Ejecutar las pruebas (npm test)
+      # (Criterio: Automatización de pruebas)
+      - name: Ejecutar Pruebas
+        run: npm test
+
+  # 2do Job: Desplegar (Simulación)
+  deploy:
+    name: 🚀 Desplegar (Simulación)
+    # Este job solo corre si 'build-and-test' fue exitoso
+    needs: build-and-test
     runs-on: ubuntu-latest
-    needs: test
-    
+
     steps:
-    - name: Checkout código
-      uses: actions/checkout@v3
-    
-    - name: Configurar Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.10"
-    
-    - name: Instalar dependencias
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    
-    - name: Verificar que la app arranca
-      run: |
-        timeout 10 python main.py || true
-  
-  security:
-    name: Análisis de Seguridad
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout código
-      uses: actions/checkout@v3
-    
-    - name: Configurar Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.10"
-    
-    - name: Instalar bandit
-      run: |
-        pip install bandit
-    
-    - name: Ejecutar análisis de seguridad
-      run: |
-        bandit -r . -f json -o bandit-report.json || true
-      continue-on-error: true
+      # (Criterio: Automatización de... despliegue)
+      - name: Simular Despliegue
+        run: |
+          echo "✅ Pruebas pasadas."
+          echo "Iniciando despliegue a un servidor..."
+          echo "..."
+          echo "🎉 ¡Despliegue simulado con éxito!"
